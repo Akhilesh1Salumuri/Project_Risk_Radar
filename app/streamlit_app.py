@@ -148,7 +148,7 @@ def render_teach_app(register: pd.DataFrame) -> None:
     update_text = str(selected.get("update_text", "") or "")
 
     with st.form("teach_app_form", clear_on_submit=True):
-        st.text_area("Update text", value=update_text, disabled=True)
+        corrected_update_text = st.text_area("Update text", value=update_text)
         st.caption(f"App classified as: {old_type} / {old_severity} / {old_pmbok_category}")
 
         cols = st.columns(3)
@@ -181,7 +181,7 @@ def render_teach_app(register: pd.DataFrame) -> None:
 
     for phrase in phrases:
         save_user_feedback(
-            update_text=update_text,
+            update_text=corrected_update_text,
             old_type=old_type,
             old_severity=old_severity,
             old_pmbok_category=old_pmbok_category,
