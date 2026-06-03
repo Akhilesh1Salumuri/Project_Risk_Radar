@@ -194,7 +194,16 @@ def render_teach_app(register: pd.DataFrame) -> None:
     st.success("Correction saved. Feedback, phrase memory, and learned taxonomy were updated.")
 
 
+if "uploader_key" not in st.session_state:
+    st.session_state["uploader_key"] = 0
+
 st.title("Project Risk Monitor")
+
+if st.button("Clear current data"):
+    for key in ["manual_updates", "latest_findings"]:
+        st.session_state.pop(key, None)
+    st.session_state["uploader_key"] += 1
+    st.rerun()
 
 sample_df = load_sample_updates()
 
@@ -203,6 +212,7 @@ uploaded_files = st.file_uploader(
     "Upload files",
     type=sorted(extension.lstrip(".") for extension in SUPPORTED_EXTENSIONS),
     accept_multiple_files=True,
+    key=f"uploaded_files_{st.session_state['uploader_key']}",
 )
 manual_text = st.text_area("Paste a manual project update")
 
@@ -238,7 +248,7 @@ else:
 st.caption(f"Loaded {len(source_df)} updates.")
 st.dataframe(source_df, use_container_width=True, hide_index=True)
 
-current_findings = st.session_state.get("latest_findings", pd.DataFrame())
+current_findings = pd.DataFrame()
 updates_to_classify = all_updates if all_updates else [update.dict() for update in normalize_updates_frame(sample_df, source="sample")]
 findings = []
 
@@ -260,11 +270,8 @@ if st.button("Classify Updates"):
 
 st.divider()
 
-update_log = read_update_log()
 latest_findings = st.session_state.get("latest_findings", pd.DataFrame())
 register = latest_findings if not latest_findings.empty else current_findings
-if register.empty:
-    register = update_log
 
 show_metrics(register)
 render_register(register)
