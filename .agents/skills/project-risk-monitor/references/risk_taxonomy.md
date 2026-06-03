@@ -1,0 +1,11 @@
+risk_taxonomy:
+  - Risk
+  - Blocker
+  - Dependency
+  - Pending Decision
+  - Overdue Action
+  - Scope Change
+  - Data Issue
+  - Compliance Risk
+  - Adoption Risk
+  - General Update
