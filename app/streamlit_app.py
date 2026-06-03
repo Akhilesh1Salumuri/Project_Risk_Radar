@@ -1,25 +1,30 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pandas as pd
 import streamlit as st
 
 try:
     from app.file_ingestor import SUPPORTED_EXTENSIONS, parse_uploaded_file
     from app.learning_engine import save_user_feedback
-    from app.memory_manager import append_update_log, read_project_memory, read_update_log, save_project_memory
-    from app.risk_engine import classify_update, normalize_updates_frame
+    from app.memory_manager import append_update_log, read_project_memory, save_project_memory
+    from app.risk_engine import classify_update
 except ModuleNotFoundError:
     from file_ingestor import SUPPORTED_EXTENSIONS, parse_uploaded_file
     from learning_engine import save_user_feedback
-    from memory_manager import append_update_log, read_project_memory, read_update_log, save_project_memory
-    from risk_engine import classify_update, normalize_updates_frame
+    from memory_manager import append_update_log, read_project_memory, save_project_memory
+    from risk_engine import classify_update
 
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
-TEST_DATA_PATH = ROOT_DIR / "data" / "test_project_updates.csv"
-SAMPLE_PATH = TEST_DATA_PATH if TEST_DATA_PATH.exists() else ROOT_DIR / "data" / "sample_updates.csv"
+SOURCE_COLUMNS = [
+    "update_id",
+    "source_file",
+    "source_type",
+    "source_location",
+    "project",
+    "workstream",
+    "update_text",
+    "owner",
+]
 EXPORT_COLUMNS = [
     "update_id",
     "source_file",
@@ -68,10 +73,6 @@ PMBOK_CATEGORY_OPTIONS = [
 
 
 st.set_page_config(page_title="Project Risk Monitor", layout="wide")
-
-
-def load_sample_updates() -> pd.DataFrame:
-    return pd.read_csv(SAMPLE_PATH)
 
 
 def show_metrics(register: pd.DataFrame) -> None:
@@ -205,8 +206,6 @@ if st.button("Clear current data"):
     st.session_state["uploader_key"] += 1
     st.rerun()
 
-sample_df = load_sample_updates()
-
 st.subheader("Project Updates")
 uploaded_files = st.file_uploader(
     "Upload files",
@@ -243,16 +242,20 @@ all_updates.extend(st.session_state.get("manual_updates", []))
 if all_updates:
     source_df = pd.DataFrame(all_updates)
 else:
-    source_df = sample_df
+    source_df = pd.DataFrame(columns=SOURCE_COLUMNS)
 
 st.caption(f"Loaded {len(source_df)} updates.")
 st.dataframe(source_df, use_container_width=True, hide_index=True)
 
 current_findings = pd.DataFrame()
-updates_to_classify = all_updates if all_updates else [update.dict() for update in normalize_updates_frame(sample_df, source="sample")]
+updates_to_classify = all_updates
 findings = []
 
 if st.button("Classify Updates"):
+    if not updates_to_classify:
+        st.warning("Upload a file or add a manual update before classifying.")
+        st.stop()
+
     for update in updates_to_classify:
         finding = classify_update(update)
         findings.append(finding)
